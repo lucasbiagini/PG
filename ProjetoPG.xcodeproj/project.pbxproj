@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9C77C3DA1B322A5500AA47BA /* Camera.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9C77C3D81B322A5500AA47BA /* Camera.cpp */; };
+		9C77C3DC1B322E0700AA47BA /* NewMain.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9C77C3DB1B322E0700AA47BA /* NewMain.cpp */; };
+		9CA182821B32269300B465C8 /* LightSource.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9CA182801B32269300B465C8 /* LightSource.cpp */; };
+		9CA182861B3227D400B465C8 /* World.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9CA182841B3227D400B465C8 /* World.cpp */; };
 		9CA695C61B079BA400F1A40B /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9CA695C51B079BA400F1A40B /* main.cpp */; };
 		9CA695CF1B079C0800F1A40B /* WorldObject.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 9CA695CD1B079C0800F1A40B /* WorldObject.cpp */; };
 		9CA695D21B07A05600F1A40B /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9CA695D01B07A05600F1A40B /* GLUT.framework */; };
@@ -26,6 +30,14 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		9C77C3D81B322A5500AA47BA /* Camera.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = Camera.cpp; sourceTree = "<group>"; };
+		9C77C3D91B322A5500AA47BA /* Camera.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Camera.h; sourceTree = "<group>"; };
+		9C77C3DB1B322E0700AA47BA /* NewMain.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = NewMain.cpp; sourceTree = "<group>"; };
+		9CA182801B32269300B465C8 /* LightSource.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = LightSource.cpp; sourceTree = "<group>"; };
+		9CA182811B32269300B465C8 /* LightSource.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LightSource.h; sourceTree = "<group>"; };
+		9CA182831B3226D200B465C8 /* Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Header.h; sourceTree = "<group>"; };
+		9CA182841B3227D400B465C8 /* World.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = World.cpp; sourceTree = "<group>"; };
+		9CA182851B3227D400B465C8 /* World.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = World.h; sourceTree = "<group>"; };
 		9CA695C21B079BA400F1A40B /* ProjetoPG */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ProjetoPG; sourceTree = BUILT_PRODUCTS_DIR; };
 		9CA695C51B079BA400F1A40B /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 		9CA695CC1B079BB700F1A40B /* openGL_tutorial.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = openGL_tutorial.h; sourceTree = "<group>"; };
@@ -73,6 +85,14 @@
 				9CA695CC1B079BB700F1A40B /* openGL_tutorial.h */,
 				9CA695CD1B079C0800F1A40B /* WorldObject.cpp */,
 				9CA695CE1B079C0800F1A40B /* WorldObject.h */,
+				9CA182801B32269300B465C8 /* LightSource.cpp */,
+				9CA182811B32269300B465C8 /* LightSource.h */,
+				9CA182831B3226D200B465C8 /* Header.h */,
+				9CA182841B3227D400B465C8 /* World.cpp */,
+				9CA182851B3227D400B465C8 /* World.h */,
+				9C77C3D81B322A5500AA47BA /* Camera.cpp */,
+				9C77C3D91B322A5500AA47BA /* Camera.h */,
+				9C77C3DB1B322E0700AA47BA /* NewMain.cpp */,
 			);
 			path = ProjetoPG;
 			sourceTree = "<group>";
@@ -134,7 +154,11 @@
 			buildActionMask = 2147483647;
 			files = (
 				9CA695C61B079BA400F1A40B /* main.cpp in Sources */,
+				9CA182821B32269300B465C8 /* LightSource.cpp in Sources */,
+				9C77C3DA1B322A5500AA47BA /* Camera.cpp in Sources */,
+				9CA182861B3227D400B465C8 /* World.cpp in Sources */,
 				9CA695CF1B079C0800F1A40B /* WorldObject.cpp in Sources */,
+				9C77C3DC1B322E0700AA47BA /* NewMain.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -248,6 +272,7 @@
 				9CA695CB1B079BA400F1A40B /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

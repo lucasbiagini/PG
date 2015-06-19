@@ -14,19 +14,37 @@
 #include <GLUT/GLUT.h>
 #include <math.h>
 #include <OpenGL/OpenGL.h>
+#include "glm/glm.hpp"
+#include "glm/gtc/matrix_transform.hpp"
+#include "World.h"
+#include "Camera.h"
+#include <vector>
 
 vector3 norm(vector3 v);
 
 WorldObject::WorldObject()
 {
+    this->world = NULL;
     this->vertexCount = 0;
     this->faceCount = 0;
     this->scale = 1;
+    this->transformedNormalsAreValid = false;
+    this->color = { 1, 1, 1 };
     
     for(int i = 0; i < MAX_VERTICES; i++)
     {
         vertexHasNormal[i] = false;
     }
+}
+
+void WorldObject::SetColor(vector3 color)
+{
+    this->color = color;
+}
+
+vector3 WorldObject::GetColor()
+{
+    return this->color;
 }
 
 std::istream& safeGetline(std::istream& is, std::string& t)
@@ -127,28 +145,17 @@ float len(vector3 v)
     return sqrtf(powf(v.x, 2) + powf(v.y, 2) + powf(v.z, 2));
 }
 
-void WorldObject::Draw()
+void WorldObject::Draw(Camera* camera)
 {
-    glLoadIdentity();
+    glMatrixMode(GL_MODELVIEW);
+    camera->LoadMatrix();
     glTranslatef(this->position.x, this->position.y, this->position.z);
-    glRotatef(this->rotation.x, 1.f, 0, 0);
-    glRotatef(this->rotation.y, 0, 1.0f, 0);
+    
     glRotatef(this->rotation.z, 0, 0, 1.0f);
+    glRotatef(this->rotation.y, 0, 1.0f, 0);
+    glRotatef(this->rotation.x, 1.f, 0, 0);
     glScalef(this->scale, this->scale, this->scale);
     
-    /*int* facesToDraw = new int[this->faceCount];
-    float* facesWeight = new float[this->faceCount];
-    for(int i = 0; i < this->faceCount; i++)
-    {
-        modelFace face = this->faces[i];
-        vector3 normal;
-        
-        facesToDraw[i] = i;
-        compVetorNormalTriangulo(this->vertices[face.v1], this->vertices[face.v2], this->vertices[face.v3], &normal);
-        
-        facesWeight[i] = len({ 0 + normal.x, 0 + normal.y, 0 + normal.y });
-    }
-    quickSort(facesToDraw, facesWeight, 0, this->faceCount - 1);*/
     
     glBegin(GL_TRIANGLES);
     for(int i = 0; i < this->faceCount; i++)
@@ -158,81 +165,52 @@ void WorldObject::Draw()
         vector3 v2 = this->vertices[face.v2];
         vector3 v3 = this->vertices[face.v3];
         
-        vector3 v1norm = this->GetVertexNormal(face.v1);
-        vector3 v2norm = this->GetVertexNormal(face.v2);
-        vector3 v3norm = this->GetVertexNormal(face.v3);
-        
-        vector3 li = { 1, 0, 1 };
-        vector3 lp = { 100, 100, 100 };
-        
-        vector3 li2 = { 1, 0, 1 };
-        vector3 lp2 = { 100, 200, 100 };
-        
-        vector3 color = CalculateAmbientComponent();
-        vector3 diffuse = CalculateDiffuseComponent(li, lp, v1norm);
-        vector3 diffuse2 = {0, 0, 0};//CalculateDiffuseComponent(li, lp, v1norm);
-        
-        vector3 resultColor = { color.x + diffuse.x + diffuse2.x, color.y + diffuse.y + diffuse2.y, color.z + diffuse.z + diffuse2.z };
-        //resultColor = norm(resultColor);
-        
-        glColor3f(resultColor.x, resultColor.y, resultColor.z);
-        glVertex3f(v1.x, v1.y, v1.z);
-        
-        
-        diffuse = CalculateDiffuseComponent(li, lp, v2norm);
-        
-        glColor3f(color.x + diffuse.x, color.y + diffuse.y, color.z + diffuse.z);
-        glVertex3f(v2.x, v2.y, v2.z);
-        
-        
-        diffuse = CalculateDiffuseComponent(li, lp, v3norm);
-        
-        glColor3f(color.x + diffuse.x, color.y + diffuse.y, color.z + diffuse.z);
-        glVertex3f(v3.x, v3.y, v3.z);
-    }
-    glEnd();
-    
-    glBegin(GL_LINES);
-    glColor3f(1, 0, 0);
-    glVertex3f(0, 0, 0);
-    glVertex3f(1, 0, 0);
-    
-    glColor3f(0, 1, 0);
-    glVertex3f(0, 0, 0);
-    glVertex3f(0, 1, 0);
-    
-    glColor3f(0, 0, 1);
-    glVertex3f(0, 0, 0);
-    glVertex3f(0, 0, 1);
-    glEnd();
-    
-    glLoadIdentity();
-    
-    /*glBegin(GL_LINES);
-    for(int i = 0; i < this->faceCount; i++)
-    {
-        modelFace face = this->faces[i];
-        vector3 v1 = this->vertices[face.v1];
-        vector3 v2 = this->vertices[face.v2];
-        vector3 v3 = this->vertices[face.v3];
+        vector3 transformedv1 = this->GetTransformedVertex(face.v1);
+        vector3 transformedv2 = this->GetTransformedVertex(face.v2);
+        vector3 transformedv3 = this->GetTransformedVertex(face.v3);
         
         vector3 v1norm = this->GetVertexNormal(face.v1);
         vector3 v2norm = this->GetVertexNormal(face.v2);
         vector3 v3norm = this->GetVertexNormal(face.v3);
         
-        glColor3f(1, 0, 0);
+        vector3 v1Color = { 0, 0, 0 };
+        vector3 v2Color = { 0, 0, 0 };
+        vector3 v3Color = { 0, 0, 0 };
+        
+        std::vector<LightSource*> lightSources = this->world->GetLightSources();
+        for(int i = 0; i < lightSources.size(); i++)
+        {
+            LightSource* ls = lightSources[i];
+            
+            vector3 v1LightColor = ls->CalculateLight(this, transformedv1, v1norm, camera);
+            vector3 v2LightColor = ls->CalculateLight(this, transformedv2, v2norm, camera);
+            vector3 v3LightColor = ls->CalculateLight(this, transformedv3, v3norm, camera);
+            
+            v1Color.x += v1LightColor.x;
+            v1Color.y += v1LightColor.y;
+            v1Color.z += v1LightColor.z;
+            
+            v2Color.x += v2LightColor.x;
+            v2Color.y += v2LightColor.y;
+            v2Color.z += v2LightColor.z;
+            
+            v3Color.x += v3LightColor.x;
+            v3Color.y += v3LightColor.y;
+            v3Color.z += v3LightColor.z;
+        }
+        
+        glColor3f(v1Color.x, v1Color.y, v1Color.z);
         glVertex3f(v1.x, v1.y, v1.z);
-        glVertex3f(v1norm.x, v1norm.y, v1norm.z);
         
-        glColor3f(1, 0, 0);
+        glColor3f(v2Color.x, v2Color.y, v2Color.z);
         glVertex3f(v2.x, v2.y, v2.z);
-        glVertex3f(v2norm.x, v2norm.y, v2norm.z);
         
-        glColor3f(1, 0, 0);
+        glColor3f(v3Color.x, v3Color.y, v3Color.z);
         glVertex3f(v3.x, v3.y, v3.z);
-        glVertex3f(v3norm.x, v3norm.y, v3norm.z);
     }
-    glEnd();*/
+    glEnd();
+    
+    this->transformedNormalsAreValid = true;
 }
 
 float dot(vector3 a, vector3 b)
@@ -242,17 +220,25 @@ float dot(vector3 a, vector3 b)
 
 vector3 WorldObject::CalculateDiffuseComponent(vector3 lightIntensity, vector3 normal, vector3 lightPosition)
 {
-    //normal.x *= cosf(this->rotation.x);
-    //normal.z *= cosf(this->rotation.x);
-    
     float cos = dot(normal, lightPosition) / (len(normal) * len(lightPosition));
     
     vector3 result = lightIntensity;
-    result.x *= cos * 0.2;
-    result.y *= cos * 0.2;
-    result.z *= cos * 0.2;
+    result.x *= cos * 0.5;
+    result.y *= cos * 0.5;
+    result.z *= cos * 0.5;
     
     return result;
+}
+
+vector3 WorldObject::GetTransformedVertex(int v)
+{
+    if(this->transformedNormalsAreValid)
+        return this->transformedVertices[v];
+    else
+    {
+        this->transformedVertices[v] = this->ApplyTransformationsToVector(this->vertices[v]);
+        return this->transformedVertices[v];
+    }
 }
 
 vector3 norm(vector3 v)
@@ -286,29 +272,51 @@ vector3 WorldObject::CalculateSpecularComponent(vector3 lightIntensity, vector3 
 vector3 WorldObject::CalculateAmbientComponent()
 {
     vector3 result;
-    result.x = .4 * 0.3;
-    result.y = .7 * 0.3;
-    result.z = 0 * 0.3;
+    result.x = 1 * .7f;
+    result.y = 1 * 0.0;
+    result.z = 1 * 0.0;
     
     return result;
+}
+
+vector3 WorldObject::ApplyTransformationsToVector(vector3 v)
+{
+    glm::vec4 vec;
+    vec[0] = v.x;
+    vec[1] = v.y;
+    vec[2] = v.z;
+    vec[3] = 1;
+    
+    glm::mat4x4 transform = glm::mat4x4(1.0f);
+    transform = glm::scale(transform, glm::vec3(this->scale, this->scale, this->scale));
+    transform = glm::rotate(transform, toRadians(this->rotation.z), glm::vec3(0, 0, 1.f));
+    transform = glm::rotate(transform, toRadians(this->rotation.y), glm::vec3(0, 1.f, 0));
+    transform = glm::rotate(transform, toRadians(this->rotation.x), glm::vec3(1.f, 0, 0));
+    transform = glm::translate(transform, glm::vec3(this->position.x, this->position.y, this->position.z));
+    
+    vec = transform * vec;
+    
+    return { vec[0], vec[1], vec[2] };
+}
+
+vector3 WorldObject::GetPosition()
+{
+    return this->position;
 }
 
 vector3 WorldObject::GetVertexNormal(int v)
 {
     if(vertexHasNormal[v])
     {
-        vector3 normal = vertexNormals[v];
-        
-        /*normal.y = (cosf(this->rotation.x) * normal.y) - (sinf(this->rotation.x) * normal.z);
-        normal.z = (sinf(this->rotation.x) * normal.y) + (cosf(this->rotation.x) * normal.z);
-        
-        normal.x = (normal.x * cosf(rotation.y)) + (normal.z * sinf(rotation.y));
-        normal.z = (-normal.x * sinf(rotation.y)) + (normal.z * cosf(rotation.y));
-        
-        normal.z = (normal.x * cosf(rotation.z)) - (normal.y * sinf(rotation.z));
-        normal.y = (normal.x * sinf(rotation.z)) + (normal.y * cosf(rotation.z));*/
-        
-        return normal;
+        if(this->transformedNormalsAreValid)
+            return transformedVertexNormals[v];
+        else
+        {
+            vector3 normal = vertexNormals[v];
+            
+            this->transformedVertexNormals[v] = this->ApplyTransformationsToVector(normal);
+            return this->transformedVertexNormals[v];
+        }
     }
     
     vector3 sum = { 0, 0, 0 };
@@ -343,8 +351,13 @@ vector3 WorldObject::GetVertexNormal(int v)
 
 void WorldObject::SetModel(const char* modelFileName)
 {
+    this->transformedNormalsAreValid = false;
+    this->vertexCount = 0;
+    this->faceCount = 0;
+    
     std::ifstream f(modelFileName);
 
+    int vn = 0;
     while(!f.eof())
     {
         std::string line;
@@ -358,6 +371,17 @@ void WorldObject::SetModel(const char* modelFileName)
         
         if(token == '#') // Comentario
         {
+        }
+        else if(token == 'v' && line[1] == 'n') // Vertice normal
+        {
+            restOfLine = line.substr(3);
+            
+            float x, y, z;
+            sscanf(restOfLine.c_str(), "%f %f %f", &x, &y, &z);
+            
+            vector3 normal = { x, y, z };
+            this->vertexNormals[vn] = normal;
+            this->vertexHasNormal[vn++] = true;
         }
         else if(token == 'v') // Vertice
         {
@@ -378,6 +402,8 @@ void WorldObject::SetModel(const char* modelFileName)
 
 void WorldObject::AddVertex(float x, float y, float z)
 {
+    this->transformedNormalsAreValid = false;
+    
     this->vertices[vertexCount].x = x;
     this->vertices[vertexCount].y = y;
     this->vertices[vertexCount].z = z;
@@ -396,6 +422,8 @@ void WorldObject::AddFace(int v1, int v2, int v3)
 
 void WorldObject::SetPosition(float x, float y, float z)
 {
+    this->transformedNormalsAreValid = false;
+    
     this->position.x = x;
     this->position.y = y;
     this->position.z = z;
@@ -403,6 +431,8 @@ void WorldObject::SetPosition(float x, float y, float z)
 
 void WorldObject::Translate(float x, float y, float z)
 {
+    this->transformedNormalsAreValid = false;
+    
     this->position.x += x;
     this->position.y += y;
     this->position.z += z;
@@ -410,6 +440,8 @@ void WorldObject::Translate(float x, float y, float z)
 
 void WorldObject::Rotate(float x, float y, float z)
 {
+    this->transformedNormalsAreValid = false;
+    
     this->rotation.x += x;
     this->rotation.y += y;
     this->rotation.z += z;
@@ -417,5 +449,12 @@ void WorldObject::Rotate(float x, float y, float z)
 
 void WorldObject::AddScale(float x)
 {
+    this->transformedNormalsAreValid = false;
     this->scale += x;
+}
+
+void WorldObject::SetWorld(World *world)
+{
+    this->world = world;
+    world->AddObject(this);
 }

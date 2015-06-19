@@ -25,11 +25,13 @@
 
 #define MAX_CONTROLPOINTS 100
 
+#if 0
+
 GLfloat mouse_x, mouse_y;
 GLfloat window_width = 800.0;
 GLfloat window_height = 800.0;
 
-vector3 observerPosition = { 0, 10, 0 };
+vector3 observerPosition = { 0, 3, 10 };
 vector3 observerRotation = { 0, 0, 0 };
 
 vector3 clickRotation;
@@ -106,21 +108,22 @@ void updateCameraMatrix()
     //multiply4(matrix, rotationY, result);
     //multiply4(matrix, translation, result);
     
-    GLfloat matrix[16] =
+    /*GLfloat matrix[16] =
     {
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
         0, 0, 0, 1
-    };
+    };*/
+    
     //glLoadMatrixf(matrix);
     glLoadIdentity();
     gluPerspective(45, (float)window_width/(float)window_height, 1.f, 100.f);
-    glRotatef(observerRotation.x, 1, 0, 0);
+    /*glRotatef(observerRotation.x, 1, 0, 0);
     glRotatef(observerRotation.y, 0, 1, 0);
     glTranslatef(-observerPosition.x,
                  -observerPosition.y,
-                 -observerPosition.z);
+                 -observerPosition.z);*/
 
 }
 
@@ -132,12 +135,7 @@ void myreshape (GLsizei w, GLsizei h)
     window_width = (GLfloat) w;
     window_height = (GLfloat) h;
     
-    //gluPerspective(45, (float)w/(float)h, 1.f, 100.f);
-    //glOrtho(0, window_width, window_height, 0, -1.0, -1.0);
-    
     updateCameraMatrix();
-    //glTranslatef(-3.f, -3.0, -10.f);
-    //glRotatef(-45, 0, 0, 0);
     
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
@@ -196,23 +194,54 @@ void drawFloor()
     glEnd();
 }
 
+void loadModelMatrix();
+
 // aqui o sistema de coordenadas da tela est· variando de -1 a 1 no eixo x e y
 void mydisplay()
 {
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
-    
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    drawFloor();
-    
     glClear(GL_DEPTH_BUFFER_BIT);
     
-    glLoadIdentity();
-    obj.Draw();
+    glMatrixMode(GL_MODELVIEW);
+    loadModelMatrix();
+    drawFloor();
+    
+    //glClear(GL_DEPTH_BUFFER_BIT);
+    
+    loadModelMatrix();
+    obj.Draw(NULL);
     
     glFlush();
     //glutPostRedisplay();
+}
+
+void loadModelMatrix()
+{
+    glLoadIdentity();
+    
+    // rotação X
+    glLoadMatrixf(new GLfloat[16] {
+        1, 0, 0, 0,
+        0, cosf(observerRotation.x * M_PI / 180.f), sinf(observerRotation.x * M_PI / 180.f), 0,
+        0, -sinf(observerRotation.x * M_PI / 180.f), cosf(observerRotation.x * M_PI / 180.f), 0,
+        0, 0, 0, 1
+    });
+    // rotação y
+    glMultMatrixf(new GLfloat[16] {
+        cosf(observerRotation.y * M_PI / 180.f), 0, -sinf(observerRotation.y * M_PI / 180.f), 0,
+        0, 1, 0, 0,
+        sinf(observerRotation.y * M_PI / 180.f), 0, cosf(observerRotation.y * M_PI / 180.f), 0,
+        0, 0, 0, 1
+    });
+    
+    // translação
+    glMultMatrixf(new GLfloat[16] {
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        -observerPosition.x, -observerPosition.y, -observerPosition.z, 1
+    });
 }
 
 void handlePassiveMotion(int x, int y)
@@ -361,7 +390,7 @@ void hadleSpecialKeyboard(int key, int x, int y)
 {
 }
 
-int main(int argc, char **argv)
+int oldmain(int argc, char **argv)
 {
     glutInit(&argc, argv);
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
@@ -381,11 +410,13 @@ int main(int argc, char **argv)
     glDepthMask(true);
     glDepthFunc(GL_LEQUAL);
     
-    obj.SetModel("/Users/igorlira/Desktop/yoda.obj");
+    obj.SetModel("/Users/igorlira/Desktop/cubo.obj");
     //obj.AddScale(-.9);
-    obj.Rotate(80, 90, 0);
+    //obj.Rotate(80, 90, 0);
     //obj.Translate(0, 0, 100);
     
     glutMainLoop();
     return 0;
 }
+
+#endif
